@@ -1,3 +1,4 @@
+const { Op, where } = require("sequelize");
 const { Shops, Products, Users } = require("../models");
 
 const createShop = async (req, res) => {
@@ -36,7 +37,7 @@ const createShop = async (req, res) => {
         isSuccess: false,
         data: null,
       });
-    } 
+    }
     else {
       res.status(500).json({
         status: "Fail",
@@ -50,12 +51,24 @@ const createShop = async (req, res) => {
 
 const getAllShop = async (req, res) => {
   try {
+    // 1. jaga request query
+    const { shopName, adminEmail, productName, stock } = req.query;
+    const condition = {};
+    if (shopName) condition.name = { [Op.iLike]: `%${shopName}%`}
+    const productCondition = {};
+    if (productName) productCondition.name = { [Op.iLike]: `%${productName}%`}
+    if (stock) productCondition.stock = stock
+
+    // 2. dinamis filter
+    // if (`req.query.${id} = ${req.query.id}`)
+
     const shops = await Shops.findAll({
       include: [
         {
           model: Products,
           as: "products",
-          attributes: ["name", "images"],
+          attributes: ["name", "images", "stock", "price"],
+          where: productCondition,
         },
         {
           model: Users,
@@ -63,7 +76,8 @@ const getAllShop = async (req, res) => {
           attributes: ["name"]
         },
       ],
-      attributes: ["name"]
+      attributes: ["name", "adminEmail"],
+      where: condition
     });
 
     res.status(200).json({
